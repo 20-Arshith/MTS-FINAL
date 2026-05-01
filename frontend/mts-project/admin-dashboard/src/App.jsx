@@ -3309,6 +3309,7 @@ const AdsManagement = () => {
     buttonText: '',
     redirectLink: '',
     status: 'Active',
+    position: 'Top',
     imageUrl: '',
     colors: ['#1565C0', '#0D47A1']
   });
@@ -3447,7 +3448,7 @@ const AdsManagement = () => {
           onClick={() => {
             setFormData({
               id: '', title: '', subtitle: '', buttonText: '', redirectLink: '',
-              status: 'Active', imageUrl: '', colors: ['#1565C0', '#0D47A1']
+              status: 'Active', position: 'Top', imageUrl: '', colors: ['#1565C0', '#0D47A1']
             });
             setEditingAdId(null);
             setShowForm(!showForm);
@@ -3476,6 +3477,7 @@ const AdsManagement = () => {
                 <label className="field-label">Banner Title *</label>
                 <input
                   type="text"
+                  className="field-input"
                   required
                   placeholder="e.g., AC Service Special"
                   value={formData.title}
@@ -3486,6 +3488,7 @@ const AdsManagement = () => {
                 <label className="field-label">Subtitle *</label>
                 <input
                   type="text"
+                  className="field-input"
                   required
                   placeholder="e.g., Starting from Rs.499"
                   value={formData.subtitle}
@@ -3496,6 +3499,7 @@ const AdsManagement = () => {
                 <label className="field-label">CTA Button Text *</label>
                 <input
                   type="text"
+                  className="field-input"
                   required
                   placeholder="e.g., Offer Now"
                   value={formData.buttonText}
@@ -3505,6 +3509,7 @@ const AdsManagement = () => {
               <div>
                 <label className="field-label">Linked Service (Category)</label>
                 <select
+                  className="field-input"
                   value={formData.redirectLink}
                   onChange={(e) => setFormData({ ...formData, redirectLink: e.target.value })}
                 >
@@ -3519,11 +3524,24 @@ const AdsManagement = () => {
               <div>
                 <label className="field-label">Status</label>
                 <select
+                  className="field-input"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Placement Position</label>
+                <select
+                  className="field-input"
+                  value={formData.position || 'Top'}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                >
+                  <option value="Top">Top Header Banner</option>
+                  <option value="Bottom">Bottom Footer Banner</option>
+                  <option value="Both">Both (Top & Bottom)</option>
                 </select>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
@@ -3574,15 +3592,16 @@ const AdsManagement = () => {
                 <th>Banner</th>
                 <th>Title & Subtitle</th>
                 <th>Linked Service</th>
+                <th>Position</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && ads.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>Loading ads...</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>Loading ads...</td></tr>
               ) : ads.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No ads found. Add a new banner!</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No ads found. Add a new banner!</td></tr>
               ) : (
                 ads.map((ad) => (
                   <tr key={ad.id}>
@@ -3598,7 +3617,16 @@ const AdsManagement = () => {
                       <div style={{ fontSize: '0.85rem', color: '#666' }}>{ad.subtitle}</div>
                       <div style={{ fontSize: '0.8rem', color: '#0f62fe', marginTop: 4 }}>Button: {ad.buttonText}</div>
                     </td>
-                    <td>{ad.redirectLink || 'None'}</td>
+                    <td>
+                      <span className="eyebrow" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>
+                        {ad.redirectLink || 'None'}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: '#36506c' }}>
+                        {ad.position === 'Both' ? 'Top & Bottom' : (ad.position || 'Top')}
+                      </span>
+                    </td>
                     <td>
                       <button
                         type="button"

@@ -322,7 +322,10 @@ const HomeScreen = ({ navigation, route }) => {
     }, [userCoordinates.latitude, userCoordinates.longitude]);
 
     const visibleCategories = categories.slice(0, 8);
-    const displayBanners = fetchedBanners.length > 0 ? fetchedBanners : banners;
+    const topFetchedBanners = fetchedBanners.filter(ad => ad.position === 'Top' || ad.position === 'Both' || !ad.position);
+    const bottomFetchedBanners = fetchedBanners.filter(ad => ad.position === 'Bottom' || ad.position === 'Both');
+    const displayBanners = topFetchedBanners.length > 0 ? topFetchedBanners : banners;
+    const displayBottomBanners = bottomFetchedBanners.length > 0 ? bottomFetchedBanners : bottomBanners;
 
     return (
         <SafeAreaView
@@ -654,12 +657,18 @@ const HomeScreen = ({ navigation, route }) => {
                         }}
                         scrollEventThrottle={16}
                     >
-                        {bottomBanners.map((banner, i) => (
-                            <View
+                        {displayBottomBanners.map((banner, i) => (
+                            <TouchableOpacity
                                 key={i}
+                                activeOpacity={0.9}
+                                onPress={() => {
+                                    if (banner.redirectLink) {
+                                        navigation.navigate('Search', { initialSearch: banner.redirectLink });
+                                    }
+                                }}
                                 className="w-min h-[150px] mx-4 rounded-2xl p-5 flex-row overflow-hidden shadow-lg"
                                 style={{
-                                    backgroundColor: banner.colors[0],
+                                    backgroundColor: banner.colors?.[0] || '#7E57C2',
                                     width: heroCardWidth,
                                     shadowColor: '#000',
                                     shadowOffset: { width: 0, height: 5 },
@@ -668,7 +677,10 @@ const HomeScreen = ({ navigation, route }) => {
                                     elevation: 10,
                                 }}
                             >
-                                <View className="flex-1 justify-center">
+                                {banner.imageUrl ? (
+                                    <Image source={{ uri: banner.imageUrl }} style={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, width: '100%', height: '100%', borderRadius: 16 }} resizeMode="cover" />
+                                ) : null}
+                                <View className="flex-1 justify-center" style={{ zIndex: 1, backgroundColor: banner.imageUrl ? 'rgba(0,0,0,0.5)' : 'transparent', borderRadius: 8, padding: banner.imageUrl ? 8 : 0 }}>
                                     <Text className="text-white/80 text-[13px] font-medium">{banner.title}</Text>
                                     <Text className="text-white text-lg font-extrabold mt-1 max-w-[90%] leading-snug">
                                         {banner.subtitle}
@@ -679,14 +691,16 @@ const HomeScreen = ({ navigation, route }) => {
                                         </Text>
                                     </View>
                                 </View>
-                                <View className="w-20 h-24 bg-white/20 rounded-xl items-center justify-center">
-                                    <MaterialIcons name={banner.icon as any} size={40} color="rgba(255,255,255,0.8)" />
-                                </View>
-                            </View>
+                                {!banner.imageUrl ? (
+                                    <View className="w-20 h-24 bg-white/20 rounded-xl items-center justify-center">
+                                        <MaterialIcons name={banner.icon || 'cleaning-services' as any} size={40} color="rgba(255,255,255,0.8)" />
+                                    </View>
+                                ) : null}
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                     <View className="flex-row justify-center mt-4">
-                        {bottomBanners.map((_, i) => (
+                        {displayBottomBanners.map((_, i) => (
                             <View
                                 key={i}
                                 className={`h-2 mx-1 rounded-full ${i === bottomBannerIndex ? 'w-5 bg-[#7B2FF7]' : 'w-2 bg-gray-300'}`}
