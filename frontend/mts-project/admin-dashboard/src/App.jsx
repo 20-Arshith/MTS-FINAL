@@ -46,6 +46,7 @@ import {
   ArrowUpDown,
   Check,
   UploadCloud,
+  Megaphone,
 } from 'lucide-react';
 import './App.css';
 import mtsLogo from '../../agent/agent-app/assets/logo.png';
@@ -3291,6 +3292,358 @@ const ServiceManagement = () => {
   );
 };
 
+const AdsManagement = () => {
+  const [ads, setAds] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingAdId, setEditingAdId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const [categories, setCategories] = useState([]);
+
+  const [formData, setFormData] = useState({
+    id: '',
+    title: '',
+    subtitle: '',
+    buttonText: '',
+    redirectLink: '',
+    status: 'Active',
+    imageUrl: '',
+    colors: ['#1565C0', '#0D47A1']
+  });
+
+  const fetchAds = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`https://res.cloudinary.com/dge2s1ncr/raw/upload/v1/mts-india/ads-config.json?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAds(Array.isArray(data) ? data : []);
+      } else {
+        setAds([]);
+      }
+    } catch (e) {
+      console.error(e);
+      setAds([]);
+    }
+    setLoading(false);
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await publicApi.get('/users/categories');
+      if (res.data?.success) {
+        setCategories(res.data.data);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch categories for ads', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAds();
+    fetchCategories();
+  }, []);
+
+  const uploadImage = async (file) => {
+    setIsUploading(true);
+    try {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const apiSecret = '7XossQqazW-scgCTeX-4zWZbJ-E';
+      const str = `folder=mts-india/ads&timestamp=${timestamp}${apiSecret}`;
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const form = new FormData();
+      form.append('file', file);
+      form.append('api_key', '716266853254851');
+      form.append('timestamp', timestamp);
+      form.append('signature', signature);
+      form.append('folder', 'mts-india/ads');
+
+      const res = await fetch('https://api.cloudinary.com/v1_1/dge2s1ncr/image/upload', {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      setFormData(prev => ({ ...prev, imageUrl: data.secure_url }));
+    } catch (e) {
+      console.error(e);
+    }
+    setIsUploading(false);
+  };
+
+  const saveAdsConfig = async (newAds) => {
+    setLoading(true);
+    try {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const apiSecret = '7XossQqazW-scgCTeX-4zWZbJ-E';
+      const str = `overwrite=true&public_id=mts-india/ads-config.json&timestamp=${timestamp}${apiSecret}`;
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const form = new FormData();
+      const blob = new Blob([JSON.stringify(newAds)], { type: 'application/json' });
+      form.append('file', blob);
+      form.append('api_key', '716266853254851');
+      form.append('timestamp', timestamp);
+      form.append('signature', signature);
+      form.append('public_id', 'mts-india/ads-config.json');
+      form.append('overwrite', 'true');
+
+      const res = await fetch('https://api.cloudinary.com/v1_1/dge2s1ncr/raw/upload', {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setAds(newAds);
+        setShowForm(false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    let newAds = [...ads];
+    if (editingAdId) {
+      newAds = newAds.map(ad => ad.id === editingAdId ? formData : ad);
+    } else {
+      newAds.push({ ...formData, id: Date.now().toString() });
+    }
+    saveAdsConfig(newAds);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this ad?')) {
+      const newAds = ads.filter(ad => ad.id !== id);
+      saveAdsConfig(newAds);
+    }
+  };
+
+  const toggleStatus = (id) => {
+    const newAds = ads.map(ad => {
+      if (ad.id === id) {
+        return { ...ad, status: ad.status === 'Active' ? 'Inactive' : 'Active' };
+      }
+      return ad;
+    });
+    saveAdsConfig(newAds);
+  };
+
+  return (
+    <div className="main-content">
+      <header className="page-header">
+        <div>
+          <h1 className="page-title">Ads Management</h1>
+          <p className="page-subtitle">Manage promotional banners and ads shown on the user app.</p>
+        </div>
+        <button
+          className="btn-primary header-action"
+          type="button"
+          onClick={() => {
+            setFormData({
+              id: '', title: '', subtitle: '', buttonText: '', redirectLink: '',
+              status: 'Active', imageUrl: '', colors: ['#1565C0', '#0D47A1']
+            });
+            setEditingAdId(null);
+            setShowForm(!showForm);
+          }}
+        >
+          <Sparkles size={18} /> Add New Banner
+        </button>
+      </header>
+
+      {showForm && (
+        <div className="section-card glass form-panel">
+          <div className="panel-head-inline">
+            <h3>{editingAdId ? 'Edit Banner' : 'Add New Banner'}</h3>
+            <button
+              type="button"
+              className="icon-only"
+              onClick={() => setShowForm(false)}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSave}>
+            <div className="form-grid">
+              <div>
+                <label className="field-label">Banner Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., AC Service Special"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="field-label">Subtitle *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Starting from Rs.499"
+                  value={formData.subtitle}
+                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="field-label">CTA Button Text *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Offer Now"
+                  value={formData.buttonText}
+                  onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="field-label">Linked Service (Category)</label>
+                <select
+                  value={formData.redirectLink}
+                  onChange={(e) => setFormData({ ...formData, redirectLink: e.target.value })}
+                >
+                  <option value="">None</option>
+                  {categories.map((cat) => (
+                    <option key={cat.category_id} value={cat.category_name}>
+                      {cat.category_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="field-label">Banner Image (Optional)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {formData.imageUrl && (
+                    <img src={formData.imageUrl} alt="Banner" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
+                  )}
+                  <label className="btn-secondary" style={{ cursor: 'pointer', padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid #ccc' }}>
+                    {isUploading ? 'Uploading...' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          uploadImage(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel-footer-link">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowForm(false)}
+                style={{ marginRight: '0.5rem' }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" disabled={loading || isUploading}>
+                {loading ? 'Saving...' : 'Save Banner'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="section-card dashboard-panel">
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Banner</th>
+                <th>Title & Subtitle</th>
+                <th>Linked Service</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && ads.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>Loading ads...</td></tr>
+              ) : ads.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No ads found. Add a new banner!</td></tr>
+              ) : (
+                ads.map((ad) => (
+                  <tr key={ad.id}>
+                    <td>
+                      {ad.imageUrl ? (
+                        <img src={ad.imageUrl} alt={ad.title} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }} />
+                      ) : (
+                        <div style={{ width: 60, height: 60, backgroundColor: ad.colors?.[0] || '#ccc', borderRadius: 8 }} />
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{ad.title}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#666' }}>{ad.subtitle}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#0f62fe', marginTop: 4 }}>Button: {ad.buttonText}</div>
+                    </td>
+                    <td>{ad.redirectLink || 'None'}</td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => toggleStatus(ad.id)}
+                        className={`status-dot ${ad.status === 'Active' ? 'success' : 'warning'}`}
+                        style={{ border: 'none', cursor: 'pointer' }}
+                      >
+                        {ad.status}
+                      </button>
+                    </td>
+                    <td className="actions">
+                      <button
+                        type="button"
+                        className="action-btn"
+                        onClick={() => {
+                          setFormData(ad);
+                          setEditingAdId(ad.id);
+                          setShowForm(true);
+                        }}
+                      >
+                        <Wrench size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn reject"
+                        onClick={() => handleDelete(ad.id)}
+                      >
+                        <X size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(localStorage.getItem(ADMIN_AUTH_STORAGE_KEY)));
   const [authMessage, setAuthMessage] = useState('');
@@ -3373,6 +3726,12 @@ function App() {
                   Payout
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                  <Megaphone size={20} />
+                  Ads
+                </NavLink>
+              </li>
             </ul>
           </nav>
 
@@ -3410,6 +3769,7 @@ function App() {
           <Route path="/payin" element={<Payins />} />
           <Route path="/payout" element={<Payouts />} />
           <Route path="/payouts" element={<Navigate to="/payout" />} />
+          <Route path="/ads" element={<AdsManagement />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>

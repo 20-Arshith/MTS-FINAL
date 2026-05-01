@@ -86,7 +86,9 @@ export default function ManageServicesScreen() {
                                             size={20} 
                                             color="#64748B" 
                                         />
-                                        <Text style={styles.actionText}>{service.is_available ? 'Hide' : 'Show'}</Text>
+                                        <Text style={styles.actionText}>
+                                            {service.is_available ? 'Unavailable for users' : 'Available for users'}
+                                        </Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.actionButton}
@@ -210,12 +212,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
         paddingVertical: 8,
+        paddingHorizontal: 4,
     },
     actionText: {
-        fontSize: 14,
+        flexShrink: 1,
+        fontSize: 13,
         fontWeight: '600',
         color: '#64748B',
         marginLeft: 8,
+        textAlign: 'center',
     },
     footer: {
         position: 'absolute',

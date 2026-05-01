@@ -22,6 +22,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-location": "~19.0.8",
     "expo-status-bar": "~3.0.9",
+    "expo-updates": "~29.0.17",
     "lucide-react-native": "1.7.0",
     "nativewind": "4.1.23",
     "react": "19.1.0",
@@ -41,5 +42,8 @@
   "private": true,
   "devDependencies": {
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "react-native-worklets": "0.5.1"
   }
 }

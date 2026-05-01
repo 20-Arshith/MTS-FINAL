@@ -31,6 +31,10 @@
   ],
   "author": "",
   "license": "ISC",
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "react-native-worklets": "0.5.1"
+  },
+  "overrides": {
+    "react-native-worklets": "0.5.1"
+  }
 }

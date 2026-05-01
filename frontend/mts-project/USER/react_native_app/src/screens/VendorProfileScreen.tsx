@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,240 @@ import {
   Image,
   Dimensions,
   Modal,
+  FlatList,
 } from 'react-native';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { getServiceMeta } from '../utils/serviceHelpers';
 import api from '../utils/api';
 
 const { width } = Dimensions.get('window');
+
+const REEL_GRID_PADDING = 8;
+const REEL_GRID_GAP = 4;
+const REEL_TILE_WIDTH = (width - REEL_GRID_PADDING * 2 - REEL_GRID_GAP * 2) / 3;
+const REEL_TILE_HEIGHT = REEL_TILE_WIDTH * (16 / 9);
+
+const formatCompactCount = (value: any) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return '0';
+  }
+
+  if (numeric >= 1000000) {
+    const compact = numeric / 1000000;
+    return `${compact % 1 === 0 ? compact.toFixed(0) : compact.toFixed(1)}M`;
+  }
+
+  if (numeric >= 1000) {
+    const compact = numeric / 1000;
+    return `${compact % 1 === 0 ? compact.toFixed(0) : compact.toFixed(1)}K`;
+  }
+
+  return String(Math.round(numeric));
+};
+
+const getReelViewCount = (reel: any) =>
+  reel?.view_count ?? reel?.views ?? reel?.viewCount ?? reel?.watch_count ?? reel?.watchCount ?? 0;
+
+const getReelThumbnail = (reel: any) =>
+  reel?.thumbnail_url || reel?.thumbnailUrl || reel?.cover_url || reel?.coverUrl || '';
+
+const getReelVideoUrl = (reel: any) =>
+  reel?.video_url || reel?.videoUrl || reel?.url || reel?.media_url || reel?.mediaUrl || '';
+
+const getReelTitle = (reel: any, fallback = 'Service reel') =>
+  reel?.caption || reel?.title || reel?.description || fallback;
+
+const ReelPlayerItem = ({ reel, vendorName, isActive, onClose, isMuted, setIsMuted, height, width }: any) => {
+  const videoUrl = getReelVideoUrl(reel);
+  const thumbnail = getReelThumbnail(reel);
+  const title = getReelTitle(reel, `${vendorName} reel`);
+
+  const player = useVideoPlayer(
+    { uri: videoUrl },
+    (videoPlayer) => {
+      videoPlayer.loop = true;
+      videoPlayer.muted = isMuted;
+      videoPlayer.showNowPlayingNotification = false;
+    }
+  );
+
+  useEffect(() => {
+    player.muted = isMuted;
+  }, [isMuted, player]);
+
+  useEffect(() => {
+    if (isActive && videoUrl) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive, videoUrl, player]);
+
+  return (
+    <View style={{ width, height, backgroundColor: '#05070D' }}>
+      {videoUrl ? (
+        <VideoView
+          player={player}
+          style={{ position: 'absolute', inset: 0 as any, width: '100%', height: '100%' }}
+          contentFit="cover"
+          allowsFullscreen={false}
+          nativeControls={false}
+        />
+      ) : thumbnail ? (
+        <Image
+          source={{ uri: thumbnail }}
+          style={{ position: 'absolute', inset: 0 as any, width: '100%', height: '100%' }}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="videocam-outline" size={54} color="rgba(255,255,255,0.45)" />
+          <Text style={{ color: 'rgba(255,255,255,0.7)', marginTop: 12, fontWeight: '700' }}>
+            Reel unavailable
+          </Text>
+        </View>
+      )}
+
+      {/* Overlay top */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+          paddingHorizontal: 16,
+          paddingBottom: 18,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+      >
+        <TouchableOpacity
+          onPress={onClose}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 12,
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }} numberOfLines={1}>
+            {vendorName}
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, marginTop: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }} numberOfLines={1}>
+            Reels
+          </Text>
+        </View>
+        {videoUrl ? (
+          <TouchableOpacity
+            onPress={() => setIsMuted(!isMuted)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {/* Overlay bottom */}
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: 16,
+          paddingTop: 32,
+          paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        }}
+      >
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, top: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginBottom: 8, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }} numberOfLines={2}>
+          {title}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="play" size={16} color="rgba(255,255,255,0.9)" />
+          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600', marginLeft: 6, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>
+            {formatCompactCount(getReelViewCount(reel))} views
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const ReelViewerModal = ({
+  reels,
+  initialIndex,
+  vendorName,
+  onClose,
+}: {
+  reels: any[];
+  initialIndex: number;
+  vendorName: string;
+  onClose: () => void;
+}) => {
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const { height, width } = Dimensions.get('window');
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
+  return (
+    <Modal visible={true} animationType="slide" onRequestClose={onClose} transparent={false}>
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <FlatList
+          data={reels}
+          keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
+          renderItem={({ item, index }) => (
+            <ReelPlayerItem
+              reel={item}
+              vendorName={vendorName}
+              isActive={currentIndex === index}
+              onClose={onClose}
+              isMuted={isMuted}
+              setIsMuted={setIsMuted}
+              height={height}
+              width={width}
+            />
+          )}
+          pagingEnabled
+          showsVerticalScrollIndicator={false}
+          initialScrollIndex={initialIndex}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          getItemLayout={(data, index) => ({
+            length: height,
+            offset: height * index,
+            index,
+          })}
+        />
+      </View>
+    </Modal>
+  );
+};
 
 
 
@@ -34,6 +262,7 @@ const VendorProfileScreen = ({ navigation, route }) => {
   const [notAvailable, setNotAvailable] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'services' | 'gallery' | 'reels'>('services');
   const [vendorDetails, setVendorDetails] = useState({
     vendorName: initialVendorName,
@@ -338,26 +567,116 @@ const VendorProfileScreen = ({ navigation, route }) => {
 
 
           {activeTab === 'reels' && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            <View style={{ backgroundColor: '#FFFFFF', paddingTop: REEL_GRID_GAP, paddingBottom: 24 }}>
               {vendorDetails.reels && vendorDetails.reels.length > 0 ? (
-                vendorDetails.reels.map((reel: any, index: number) => (
-                  <View key={reel.id || index} style={{ width: width / 3, height: (width / 3) * 1.77, padding: 1, position: 'relative' }}>
-                    <Image source={{ uri: reel.thumbnail_url || 'https://via.placeholder.com/150' }} style={{ width: '100%', height: '100%', backgroundColor: '#000' }} resizeMode="cover" />
-                    <View style={{ position: 'absolute', top: 6, right: 6 }}>
-                      <Ionicons name="play-outline" size={20} color="#fff" />
-                    </View>
-                  </View>
-                ))
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: REEL_GRID_PADDING }}>
+                  {vendorDetails.reels.map((reel: any, index: number) => {
+                    const thumbnail = getReelThumbnail(reel);
+
+                    return (
+                      <TouchableOpacity
+                        key={reel.id || index}
+                        activeOpacity={0.9}
+                        onPress={() => setSelectedReelIndex(index)}
+                        style={{
+                          width: REEL_TILE_WIDTH,
+                          height: REEL_TILE_HEIGHT,
+                          marginRight: index % 3 === 2 ? 0 : REEL_GRID_GAP,
+                          marginBottom: REEL_GRID_GAP,
+                          backgroundColor: '#0B0F16',
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {thumbnail ? (
+                          <Image source={{ uri: thumbnail }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        ) : (
+                          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111827' }}>
+                            <Ionicons name="videocam-outline" size={28} color="rgba(255,255,255,0.6)" />
+                          </View>
+                        )}
+
+                        <View
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                          }}
+                        />
+
+                        <View
+                          style={{
+                            position: 'absolute',
+                            top: 6,
+                            right: 6,
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(0,0,0,0.38)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Ionicons name="play" size={13} color="#FFFFFF" style={{ marginLeft: 1 }} />
+                        </View>
+
+                        <View
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 44,
+                            backgroundColor: 'rgba(0,0,0,0.24)',
+                          }}
+                        />
+
+                        <View
+                          style={{
+                            position: 'absolute',
+                            left: 7,
+                            bottom: 8,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Ionicons name="eye-outline" size={15} color="#FFFFFF" />
+                          <Text
+                            style={{
+                              color: '#FFFFFF',
+                              fontSize: 12,
+                              fontWeight: '800',
+                              marginLeft: 4,
+                              includeFontPadding: false,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {formatCompactCount(getReelViewCount(reel))}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               ) : (
-                <View style={{ width: '100%', alignItems: 'center', paddingVertical: 40 }}>
-                  <Ionicons name="videocam-outline" size={48} color="#D1D5DB" />
-                  <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 15, fontWeight: '500' }}>No reels available.</Text>
+                <View style={{ width: '100%', alignItems: 'center', paddingVertical: 48, backgroundColor: '#FFFFFF' }}>
+                  <Ionicons name="videocam-outline" size={48} color="#CBD5E1" />
+                  <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 15, fontWeight: '700' }}>No reels available.</Text>
                 </View>
               )}
             </View>
           )}
         </View>
       </ScrollView>
+
+      {selectedReelIndex !== null ? (
+        <ReelViewerModal
+          reels={vendorDetails.reels}
+          initialIndex={selectedReelIndex}
+          vendorName={vendorDetails.vendorName}
+          onClose={() => setSelectedReelIndex(null)}
+        />
+      ) : null}
 
       <Modal
         visible={galleryImages.length > 0}

@@ -43,7 +43,29 @@ export const authService = {
     verifyVendorRegistrationOtp: (contact, otp) =>
         apiClient.post('/auth/verify-otp', { contact, otp, actorType: 'vendor_registration' }),
     registerVendor: (data) => apiClient.post('/auth/register-vendor', data),
-    registerAgent: (data) => apiClient.post('/auth/register-agent', data),
+    registerAgent: async (data) => {
+        try {
+            return await apiClient.post('/auth/register-agent', data);
+        } catch (error) {
+            if (error?.response?.status === 404) {
+                try {
+                    return await apiClient.post('/agents/register', data);
+                } catch (fallbackError) {
+                    if ([401, 403, 404].includes(fallbackError?.response?.status)) {
+                        fallbackError.response = {
+                            ...fallbackError.response,
+                            data: {
+                                ...fallbackError.response?.data,
+                                message: 'Agent registration is not available on this backend. Please redeploy the backend.',
+                            },
+                        };
+                    }
+                    throw fallbackError;
+                }
+            }
+            throw error;
+        }
+    },
 };
 
 export const agentService = {

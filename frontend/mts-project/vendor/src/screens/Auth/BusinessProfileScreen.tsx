@@ -13,7 +13,10 @@ export default function BusinessProfileScreen() {
     const initialContact = (contact || mobile || '').trim();
     const initialEmail = initialContact.includes('@') ? initialContact : '';
     const initialMobile = initialContact && !initialContact.includes('@') ? initialContact : '';
-    const normalizedAgentCode = (agentCode || '').trim().toUpperCase();
+    const rawAgentCode = (agentCode || '').trim();
+    const normalizedAgentCode = ['', 'undefined', 'null'].includes(rawAgentCode.toLowerCase())
+        ? ''
+        : rawAgentCode.toUpperCase();
 
     const [businessName, setBusinessName] = useState('');
     const [ownerName, setOwnerName] = useState('');

@@ -22,11 +22,16 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.charanwudaru.agentapp",
-      "usesCleartextTraffic": true
+      "package": "com.charanwudaru.agentapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d0730ce3-8092-47be-9a04-7d57bc81a6aa"
     },
     "extra": {
       "eas": {

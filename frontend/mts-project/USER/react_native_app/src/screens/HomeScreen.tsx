@@ -68,6 +68,7 @@ const HomeScreen = ({ navigation, route }) => {
     const { width: screenWidth } = useWindowDimensions();
     const [bannerIndex, setBannerIndex] = useState(0);
     const [bottomBannerIndex, setBottomBannerIndex] = useState(0);
+    const [fetchedBanners, setFetchedBanners] = useState<any[]>([]);
     const [locationName, setLocationName] = useState('HSR Layout, Bangalore');
     const [locationDetail, setLocationDetail] = useState('');
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
@@ -104,6 +105,23 @@ const HomeScreen = ({ navigation, route }) => {
             navigation.setParams({ autoFetchLocation: false });
         }
     }, [navigation, route.params?.autoFetchLocation]);
+
+    useEffect(() => {
+        const fetchAds = async () => {
+            try {
+                const res = await fetch(`https://res.cloudinary.com/dge2s1ncr/raw/upload/v1/mts-india/ads-config.json?t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setFetchedBanners(data.filter(ad => ad.status === 'Active'));
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch ads', e);
+            }
+        };
+        fetchAds();
+    }, []);
 
     const fetchLocation = async (showError = true) => {
         setIsFetchingLocation(true);
@@ -304,6 +322,7 @@ const HomeScreen = ({ navigation, route }) => {
     }, [userCoordinates.latitude, userCoordinates.longitude]);
 
     const visibleCategories = categories.slice(0, 8);
+    const displayBanners = fetchedBanners.length > 0 ? fetchedBanners : banners;
 
     return (
         <SafeAreaView
@@ -454,12 +473,18 @@ const HomeScreen = ({ navigation, route }) => {
                         }}
                         scrollEventThrottle={16}
                     >
-                        {banners.map((banner, i) => (
-                            <View
+                        {displayBanners.map((banner, i) => (
+                            <TouchableOpacity
                                 key={i}
+                                activeOpacity={0.9}
+                                onPress={() => {
+                                    if (banner.redirectLink) {
+                                        navigation.navigate('Search', { initialSearch: banner.redirectLink });
+                                    }
+                                }}
                                 className="w-min h-[150px] mx-4 rounded-2xl p-5 flex-row overflow-hidden"
                                 style={{
-                                    backgroundColor: banner.colors[0],
+                                    backgroundColor: banner.colors?.[0] || '#1565C0',
                                     width: heroCardWidth,
                                     shadowColor: '#000',
                                     shadowOffset: { width: 0, height: 5 },
@@ -468,25 +493,30 @@ const HomeScreen = ({ navigation, route }) => {
                                     elevation: 10,
                                 }}
                             >
-                                <View className="flex-1 justify-center">
-                                    <Text className="text-white/70 text-[13px]">{banner.title}</Text>
-                                    <Text className="text-white text-lg font-bold mt-1 max-w-[90%] leading-snug">
+                                {banner.imageUrl ? (
+                                    <Image source={{ uri: banner.imageUrl }} style={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, width: '100%', height: '100%', borderRadius: 16 }} resizeMode="cover" />
+                                ) : null}
+                                <View className="flex-1 justify-center" style={{ zIndex: 1, backgroundColor: banner.imageUrl ? 'rgba(0,0,0,0.5)' : 'transparent', borderRadius: 8, padding: banner.imageUrl ? 8 : 0 }}>
+                                    <Text className="text-white/80 text-[13px] font-medium">{banner.title}</Text>
+                                    <Text className="text-white text-lg font-extrabold mt-1 max-w-[90%] leading-snug">
                                         {banner.subtitle}
                                     </Text>
-                                    <View className="mt-3 bg-white self-start px-3 py-1.5 rounded-full">
-                                        <Text className="text-[#1F2937] text-xs font-semibold">
+                                    <View className="mt-3 bg-white self-start px-3.5 py-1.5 rounded-full shadow-sm">
+                                        <Text className="text-gray-900 text-xs font-bold tracking-wide">
                                             {banner.buttonText}
                                         </Text>
                                     </View>
                                 </View>
-                                <View className="w-20 h-24 bg-white/15 rounded-xl items-center justify-center">
-                                    <MaterialIcons name="cleaning-services" size={40} color="rgba(255,255,255,0.6)" />
-                                </View>
-                            </View>
+                                {!banner.imageUrl ? (
+                                    <View className="w-20 h-24 bg-white/20 rounded-xl items-center justify-center">
+                                        <MaterialIcons name={banner.icon || 'cleaning-services' as any} size={40} color="rgba(255,255,255,0.8)" />
+                                    </View>
+                                ) : null}
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                     <View className="flex-row justify-center mt-3">
-                        {banners.map((_, i) => (
+                        {displayBanners.map((_, i) => (
                             <View
                                 key={i}
                                 className={`h-2 mx-1 rounded-full ${i === bannerIndex ? 'w-5 bg-[#7B2FF7]' : 'w-2 bg-gray-300'}`}

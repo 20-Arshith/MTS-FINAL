@@ -19,11 +19,16 @@
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "package": "com.charanwudaru.react_native_app",
-      "usesCleartextTraffic": true
+      "package": "com.charanwudaru.react_native_app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/eb5e5b45-d423-4fdb-bd54-915a421f9295"
     },
     "extra": {
       "eas": {
