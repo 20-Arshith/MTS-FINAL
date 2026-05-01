@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "react_native_app",
+    "slug": "react_native_app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "package": "com.charanwudaru.react_native_app",
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eb5e5b45-d423-4fdb-bd54-915a421f9295"
+      }
+    },
+    "owner": "charanw",
+    "plugins": [
+      "expo-font",
+      "expo-video",
+      "./plugins/withAndroidHttpSupport"
+    ]
+  }
+}

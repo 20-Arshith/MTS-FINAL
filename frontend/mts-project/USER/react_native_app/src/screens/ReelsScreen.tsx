@@ -1,0 +1,387 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  Dimensions,
+  TouchableOpacity,
+  Share,
+  Platform,
+  StatusBar,
+  ActivityIndicator,
+  FlatList,
+  ListRenderItemInfo,
+} from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
+import { VideoView, useVideoPlayer } from 'expo-video';
+import api from '../utils/api';
+
+const REELS_PAGE_SIZE = 6;
+
+const mergeUniqueReels = (current: any[], incoming: any[]) => {
+  const seen = new Set(current.map((item) => String(item.id)));
+  const merged = [...current];
+
+  incoming.forEach((item) => {
+    const key = String(item.id);
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(item);
+    }
+  });
+
+  return merged;
+};
+
+const ReelFeedItem = React.memo(function ReelFeedItem({
+  reel,
+  isActive,
+  isScreenFocused,
+  height,
+  navigation,
+  onShare,
+}: {
+  reel: any;
+  isActive: boolean;
+  isScreenFocused: boolean;
+  height: number;
+  navigation: any;
+  onShare: (reel: any) => void;
+}) {
+  const [isMuted, setIsMuted] = useState(true);
+
+  const vendorName = reel.vendor?.business_name || reel.vendor?.user?.full_name || 'Vendor';
+  const serviceName = reel.vendor?.category?.category_name || reel.caption || 'Service';
+  const description = reel.caption || 'Watch this service reel on MTS India';
+
+  const player = useVideoPlayer(
+    { uri: reel.video_url },
+    (videoPlayer) => {
+      videoPlayer.loop = true;
+      videoPlayer.muted = true;
+      videoPlayer.showNowPlayingNotification = false;
+    }
+  );
+
+  useEffect(() => {
+    player.muted = isMuted;
+  }, [isMuted, player]);
+
+  useEffect(() => {
+    if (isActive && isScreenFocused) {
+      player.play();
+      return;
+    }
+
+    player.pause();
+  }, [isActive, isScreenFocused, player]);
+
+  const openVendorProfile = () => {
+    navigation.navigate('VendorProfile', {
+      vendorId: reel.vendor?.vendor_id,
+      vendorName,
+      type: serviceName,
+      rating: 4.8,
+    });
+  };
+
+  return (
+    <View style={{ height, width: '100%', backgroundColor: '#000000' }}>
+      <VideoView
+        player={player}
+        style={{ position: 'absolute', inset: 0 as any, width: '100%', height: '100%' }}
+        contentFit="cover"
+        allowsFullscreen={false}
+        nativeControls={false}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.05)',
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 54,
+          paddingHorizontal: 16,
+          paddingBottom: 24,
+          backgroundColor: 'transparent',
+        }}
+      >
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={openVendorProfile}>
+          <View
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#007BFF',
+              borderWidth: 1,
+              borderColor: '#FFFFFF',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>
+              {vendorName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }} numberOfLines={1}>
+              {vendorName}
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12 }} numberOfLines={1}>
+              {serviceName}
+            </Text>
+          </View>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.85)',
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              borderRadius: 999,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Visit</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 16,
+          paddingTop: 120,
+          paddingBottom: 28,
+          backgroundColor: 'transparent',
+        }}
+      >
+        <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginBottom: 8, paddingRight: 72 }}>
+          {serviceName}
+        </Text>
+        <Text
+          style={{ color: 'rgba(255,255,255,0.92)', fontSize: 14, lineHeight: 20, marginBottom: 16, paddingRight: 72 }}
+          numberOfLines={3}
+        >
+          {description}
+        </Text>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#FFFFFF',
+            alignSelf: 'flex-start',
+            borderRadius: 999,
+            paddingHorizontal: 18,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+          onPress={openVendorProfile}
+        >
+          <MaterialIcons name="bolt" size={18} color="#007BFF" />
+          <Text style={{ color: '#007BFF', fontWeight: '900', marginLeft: 6, fontSize: 14 }}>BOOK NOW</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ position: 'absolute', right: 12, bottom: 110, alignItems: 'center' }}>
+        <TouchableOpacity
+          style={{ alignItems: 'center', marginBottom: 18 }}
+          onPress={() => setIsMuted((prev) => !prev)}
+        >
+          <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-high-outline'} size={30} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 4 }}>
+            {isMuted ? 'Muted' : 'Sound'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{ alignItems: 'center', marginBottom: 18 }} onPress={() => onShare(reel)}>
+          <Ionicons name="arrow-redo-outline" size={30} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 4 }}>Share</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{ alignItems: 'center' }} onPress={openVendorProfile}>
+          <View
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#007BFF',
+            }}
+          >
+            <MaterialIcons name="storefront" size={22} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+const ReelsScreen = ({ navigation }: { navigation: any }) => {
+  const isFocused = useIsFocused();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(Dimensions.get('window').height);
+  const [reels, setReels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 });
+
+  const fetchReels = useCallback(async ({ pageToLoad = 1, append = false } = {}) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const res = await api.get('/reels', {
+        params: {
+          page: pageToLoad,
+          limit: REELS_PAGE_SIZE,
+        },
+      });
+      const nextReels = res.data.data || [];
+      const meta = res.data.meta || {};
+
+      if (res.data.success) {
+        setReels((current) => (append ? mergeUniqueReels(current, nextReels) : nextReels));
+        setPage(meta.page || pageToLoad);
+        setHasMore(Boolean(meta.hasMore));
+      }
+    } catch (e) {
+      console.warn('Failed to fetch reels:', e);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReels();
+  }, [fetchReels]);
+
+  const handleLoadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    fetchReels({ pageToLoad: page + 1, append: true });
+  }, [fetchReels, hasMore, loading, loadingMore, page]);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+    const firstVisible = viewableItems.find((item) => typeof item.index === 'number');
+    if (typeof firstVisible?.index === 'number') {
+      setCurrentPage(firstVisible.index);
+    }
+  });
+
+  const handleShare = async (reel: any) => {
+    const vendorName = reel.vendor?.business_name || reel.vendor?.user?.full_name || 'Vendor';
+    const serviceName = reel.vendor?.category?.category_name || reel.caption || 'service';
+
+    try {
+      await Share.share({
+        message: `Check out this ${serviceName} reel by ${vendorName} on MTS India: ${reel.video_url}`,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const renderItem = useCallback(
+    ({ item, index }: ListRenderItemInfo<any>) => (
+      <ReelFeedItem
+        reel={item}
+        isActive={index === currentPage}
+        isScreenFocused={isFocused}
+        height={containerHeight}
+        navigation={navigation}
+        onShare={handleShare}
+      />
+    ),
+    [containerHeight, currentPage, isFocused, navigation]
+  );
+
+  const dotCount = useMemo(() => reels.length, [reels.length]);
+
+  return (
+    <View
+      className="flex-1 bg-black"
+      onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
+    >
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#007BFF" />
+        </View>
+      ) : reels.length === 0 ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Ionicons name="videocam-outline" size={64} color="rgba(255,255,255,0.5)" />
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, marginTop: 16, fontWeight: '700' }}>
+            No reels available yet
+          </Text>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            data={reels}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderItem}
+            pagingEnabled
+            showsVerticalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged.current}
+            viewabilityConfig={viewabilityConfig.current}
+            snapToInterval={containerHeight}
+            decelerationRate="fast"
+            getItemLayout={(_, index) => ({
+              length: containerHeight,
+              offset: containerHeight * index,
+              index,
+            })}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={{ position: 'absolute', bottom: 20, left: 0, right: 0, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#007BFF" />
+                </View>
+              ) : null
+            }
+          />
+
+          <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, justifyContent: 'center' }}>
+            {Array.from({ length: dotCount }).map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  width: 6,
+                  height: i === currentPage ? 20 : 6,
+                  borderRadius: 999,
+                  marginVertical: 3,
+                  backgroundColor: i === currentPage ? '#007BFF' : 'rgba(255,255,255,0.35)',
+                }}
+              />
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
+export default ReelsScreen;

@@ -1,0 +1,36 @@
+{
+  "name": "mts-india",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-Service Platform",
+  "main": "backend/src/index.js",
+  "workspaces": [
+    "backend",
+    "frontend/mts-project/admin-dashboard",
+    "frontend/mts-project/vendor",
+    "frontend/mts-project/agent/agent-app",
+    "frontend/mts-project/USER/react_native_app"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace backend",
+    "dev": "npm run dev --workspace backend",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:admin": "npm run dev --workspace admin-dashboard",
+    "start:vendor": "npm run start --workspace tempvendor",
+    "start:agent": "npm run start --workspace agent-app",
+    "start:user": "npm run start --workspace react_native_app",
+    "build:admin": "npm run build --workspace admin-dashboard",
+    "prisma:generate": "npm run prisma:generate --workspace backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace backend"
+  },
+  "keywords": [
+    "mts",
+    "multi-service",
+    "prisma",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}

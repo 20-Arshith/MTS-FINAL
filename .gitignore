@@ -1,0 +1,55 @@
+# ----------------------------------------------------------------------------
+# MTS INDIA - Root .gitignore
+# ----------------------------------------------------------------------------
+
+# dependencies
+node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Next.js / React / Expo / React Native
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+build/
+android/build
+ios/build
+
+# Native (macOS/iOS/Android)
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/ios
+/android
+.DS_Store
+*.pem
+
+# Metro
+.metro-health-check*
+
+# Backend / Prisma
+/generated/prisma
+*.log
+*.pid
+
+# Environment variables
+.env
+.env*.local
+
+# Typescript
+*.tsbuildinfo
+
+# IDEs & OS specific
+.idea/
+.vscode/
+AppData
+
+# Specific app exclusions
+app-example/
