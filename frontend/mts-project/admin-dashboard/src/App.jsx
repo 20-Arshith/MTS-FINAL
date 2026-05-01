@@ -48,6 +48,7 @@ import {
   UploadCloud,
   Megaphone,
 } from 'lucide-react';
+import CryptoJS from 'crypto-js';
 import './App.css';
 import mtsLogo from '../../agent/agent-app/assets/logo.png';
 import {
@@ -3351,10 +3352,7 @@ const AdsManagement = () => {
       const timestamp = Math.floor(Date.now() / 1000);
       const apiSecret = '7XossQqazW-scgCTeX-4zWZbJ-E';
       const str = `folder=mts-india/ads&timestamp=${timestamp}${apiSecret}`;
-      const msgBuffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const signature = CryptoJS.SHA1(str).toString();
 
       const form = new FormData();
       form.append('file', file);
@@ -3380,11 +3378,8 @@ const AdsManagement = () => {
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const apiSecret = '7XossQqazW-scgCTeX-4zWZbJ-E';
-      const str = `overwrite=true&public_id=mts-india/ads-config.json&timestamp=${timestamp}${apiSecret}`;
-      const msgBuffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const str = `invalidate=true&overwrite=true&public_id=mts-india/ads-config.json&timestamp=${timestamp}${apiSecret}`;
+      const signature = CryptoJS.SHA1(str).toString();
 
       const form = new FormData();
       const blob = new Blob([JSON.stringify(newAds)], { type: 'application/json' });
@@ -3394,6 +3389,7 @@ const AdsManagement = () => {
       form.append('signature', signature);
       form.append('public_id', 'mts-india/ads-config.json');
       form.append('overwrite', 'true');
+      form.append('invalidate', 'true');
 
       const res = await fetch('https://api.cloudinary.com/v1_1/dge2s1ncr/raw/upload', {
         method: 'POST',
