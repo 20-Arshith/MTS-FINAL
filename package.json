@@ -20,8 +20,11 @@
     "start:agent": "npm run start --workspace agent-app",
     "start:user": "npm run start --workspace react_native_app",
     "build:admin": "npm run build --workspace admin-dashboard",
+    "build:backend": "npm run build --workspace backend",
+    "deploy:backend": "npm run deploy --workspace backend",
     "prisma:generate": "npm run prisma:generate --workspace backend",
-    "prisma:migrate": "npm run prisma:migrate --workspace backend"
+    "prisma:migrate": "npm run prisma:migrate --workspace backend",
+    "prisma:deploy": "npm run prisma:deploy --workspace backend"
   },
   "keywords": [
     "mts",

@@ -21,6 +21,7 @@ Required values:
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
 PORT=3000
+HOST=0.0.0.0
 NODE_ENV=production
 JWT_SECRET="replace-with-a-strong-secret"
 CLOUDINARY_CLOUD_NAME=""
@@ -36,8 +37,15 @@ From the backend project directory:
 
 ```bash
 npm install
-npx prisma migrate deploy
-npx prisma generate
+npm run deploy
+npm start
+```
+
+If your platform has separate build and start commands, use:
+
+```bash
+npm run build
+npm run prisma:deploy
 npm start
 ```
 
@@ -52,10 +60,10 @@ Expected response:
 ```json
 {
   "status": "UP",
+  "uptime": 12.345,
   "timestamp": "2026-05-02T00:00:00.000Z"
 }
 ```
-
 
 ## Self-Registration Flow
 
@@ -71,7 +79,6 @@ Expected response:
 1. Pull latest code.
 2. Confirm `.env` exists on the server.
 3. Run `npm install`.
-4. Run `npx prisma migrate deploy`.
-5. Run `npx prisma generate`.
+4. Run `npm run deploy`.
 6. Restart the Node process or PM2 app.
 7. Open `/health`.

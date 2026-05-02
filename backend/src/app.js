@@ -36,7 +36,11 @@ app.get('/', (req, res) => {
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP', timestamp: new Date() });
+  res.status(200).json({
+    status: 'UP',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Error Handling Middleware

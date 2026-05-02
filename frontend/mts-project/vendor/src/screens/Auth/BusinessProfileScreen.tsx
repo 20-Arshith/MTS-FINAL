@@ -2,21 +2,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import apiClient from '../../services/api';
+import { authService } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function BusinessProfileScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const { width } = useWindowDimensions();
-    const { mobile, contact, agentCode } = route.params || {};
+    const { mobile, contact } = route.params || {};
     const initialContact = (contact || mobile || '').trim();
     const initialEmail = initialContact.includes('@') ? initialContact : '';
     const initialMobile = initialContact && !initialContact.includes('@') ? initialContact : '';
-    const rawAgentCode = (agentCode || '').trim();
-    const normalizedAgentCode = ['', 'undefined', 'null'].includes(rawAgentCode.toLowerCase())
-        ? ''
-        : rawAgentCode.toUpperCase();
 
     const [businessName, setBusinessName] = useState('');
     const [ownerName, setOwnerName] = useState('');
@@ -371,31 +367,20 @@ export default function BusinessProfileScreen() {
 
                         setFormError('');
                         try {
-                            // Inject the bypass code if none is provided so the backend doesn't throw an error
-                            const finalAgentCode = normalizedAgentCode || 'AGT-ZCVA-R5P6';
                             const registrationData = {
                                 mobile: mobileNumber || undefined,
                                 email: emailAddress || undefined,
                                 full_name: ownerName,
                                 business_name: businessName,
-                                agent_code: finalAgentCode,
                                 whatsapp_number: whatsappNumber || mobileNumber || undefined,
                                 description,
                                 address: resolvedAddress,
                             };
                             
-                            const response = await apiClient.post('/auth/register-vendor', registrationData);
+                            const response = await authService.registerVendor(registrationData);
                             if (response.data.success) {
-                                // If we used the bypass code, strip the agent data from the local storage
-                                // so it doesn't "reflect" in the app for the vendor
-                                const userData = response.data.user;
-                                if (!normalizedAgentCode && userData?.vendor) {
-                                    userData.vendor.agent_id = null;
-                                    userData.vendor.agent = null;
-                                }
-
                                 await AsyncStorage.setItem('userToken', response.data.token);
-                                await AsyncStorage.setItem('userData', JSON.stringify(userData));
+                                await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
                                 navigation.navigate('ServiceCategories');
                             }
                         } catch (error: any) {

@@ -23,7 +23,6 @@ export default function RegisterScreen() {
     const { width, height } = useWindowDimensions();
 
     const [input, setInput] = useState((route.params?.contact || '').trim());
-    const [agentCode, setAgentCode] = useState('');
     const [showOtp, setShowOtp] = useState(false);
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [resendSeconds, setResendSeconds] = useState(30);
@@ -31,7 +30,6 @@ export default function RegisterScreen() {
     const otpRefs = useRef<any[]>([]);
 
     const isPhone = input.trim().length > 0 && /^\d+$/.test(input.trim());
-    const normalizedAgentCode = agentCode.trim().toUpperCase();
     const horizontalPadding = Math.max(18, Math.min(24, Math.round(width * 0.06)));
     const otpBoxSize = Math.max(42, Math.min(52, Math.floor((width - horizontalPadding * 2 - 28) / 6)));
     const isCompact = height < 740;
@@ -68,22 +66,6 @@ export default function RegisterScreen() {
         }
 
         try {
-            // Validate agent code only if one was entered — it is OPTIONAL.
-            // If the code is invalid, warn the vendor and clear it, but do NOT block the flow.
-            if (normalizedAgentCode) {
-                try {
-                    await authService.validateAgentCode(normalizedAgentCode);
-                } catch (agentError: any) {
-                    const agentMsg = agentError?.response?.data?.message || 'Invalid agent code';
-                    setAgentCode('');
-                    Alert.alert(
-                        'Invalid Agent Code',
-                        `${agentMsg}\n\nYou can continue without an agent code — your account will be reviewed by an admin.`,
-                        [{ text: 'Continue Without Code' }]
-                    );
-                    // Do NOT return — proceed with OTP send without the invalid code
-                }
-            }
             await authService.sendOtp(val, { actorType: 'vendor_registration' });
             setShowOtp(true);
             setResendSeconds(30);
@@ -119,10 +101,10 @@ export default function RegisterScreen() {
                             navigation.replace('Main');
                         }
                     } else {
-                        navigation.navigate('BusinessProfile', { contact: input.trim(), agentCode: normalizedAgentCode });
+                        navigation.navigate('BusinessProfile', { contact: input.trim() });
                     }
                 } else if (response.data.registrationRequired) {
-                    navigation.navigate('BusinessProfile', { contact: input.trim(), agentCode: normalizedAgentCode });
+                    navigation.navigate('BusinessProfile', { contact: input.trim() });
                 }
             }
         } catch (error: any) {
@@ -234,36 +216,6 @@ export default function RegisterScreen() {
                                         </View>
                                     )}
                                 </View>
-                            </View>
-
-                            {/* Agent Code */}
-                            <View style={{ marginBottom: 24 }}>
-                                <Text style={{ fontSize: 13, fontWeight: '500', color: '#1E293B', marginBottom: 6 }}>
-                                    Agent Code
-                                </Text>
-                                <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 8 }}>
-                                    Optional
-                                </Text>
-                                <TextInput
-                                    style={{
-                                        backgroundColor: '#F8FAFC',
-                                        borderWidth: 1,
-                                        borderColor: '#E2E8F0',
-                                        borderRadius: 12,
-                                        paddingHorizontal: 16,
-                                        paddingVertical: 14,
-                                        fontSize: 16,
-                                        color: '#111827',
-                                    }}
-                                    placeholder="E.g. AGT-ABCD-EFGH"
-                                    placeholderTextColor="#9CA3AF"
-                                    value={agentCode}
-                                    autoCapitalize="characters"
-                                    onChangeText={(value) => {
-                                        setAgentCode(value.toUpperCase().replace(/\s/g, ''));
-                                        clearFormError();
-                                    }}
-                                />
                             </View>
 
                             {formError ? (

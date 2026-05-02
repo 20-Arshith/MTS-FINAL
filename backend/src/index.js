@@ -1,15 +1,31 @@
-require('dotenv').config();
+const { validateRequiredEnv } = require('./config/env');
+const config = require('./config/config');
+
+validateRequiredEnv();
+
 const app = require('./app');
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-const server = app.listen(PORT, HOST, () => {
-    console.log(`Server is running on http://${HOST}:${PORT}`);
+const server = app.listen(config.port, config.host, () => {
+    console.log(`Server is running on http://${config.host}:${config.port}`);
 });
+
+const shutdown = (signal) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+        process.exit(0);
+    });
+};
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     console.error(`Error: ${err.message}`);
     server.close(() => process.exit(1));
 });
+
+process.on('uncaughtException', (err) => {
+    console.error(`Uncaught exception: ${err.message}`);
+    process.exit(1);
+});
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

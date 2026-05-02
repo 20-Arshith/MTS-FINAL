@@ -1,14 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
-const path = require('path');
-
-// Load .env from the backend directory specifically
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+require('./env');
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   console.error('[DATABASE] Error: DATABASE_URL is not defined.');
-  console.error('[DATABASE] Make sure backend/.env exists with DATABASE_URL set.');
+  console.error('[DATABASE] Set DATABASE_URL in the deployment environment or backend/.env.');
   process.exit(1);
 }
 

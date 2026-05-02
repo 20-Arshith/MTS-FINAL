@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import apiClient from '../../services/api';
@@ -55,7 +55,7 @@ export default function ManageServicesScreen() {
                     <View style={styles.emptyContainer}>
                         <MaterialCommunityIcons name="briefcase-outline" size={64} color="#94A3B8" />
                         <Text style={styles.emptyTitle}>No services found</Text>
-                        <Text style={styles.emptySubtitle}>You haven't added any services yet.</Text>
+                        <Text style={styles.emptySubtitle}>{"You haven't added any services yet."}</Text>
                     </View>
                 ) : (
                     services.map((service, index) => {
@@ -68,7 +68,9 @@ export default function ManageServicesScreen() {
                                     </View>
                                     <View style={styles.serviceInfo}>
                                         <Text style={styles.serviceTitle}>{service.service_title || service.category?.category_name}</Text>
-                                        <Text style={styles.servicePrice}>Rs {service.price || 'N/A'}</Text>
+                                        {service.price ? (
+                                            <Text style={styles.servicePrice}>Rs {service.price}</Text>
+                                        ) : null}
                                     </View>
                                     <View style={[styles.statusBadge, { backgroundColor: service.approval_status === 'approved' ? '#DCFCE7' : '#FEF9C3' }]}>
                                         <Text style={[styles.statusText, { color: service.approval_status === 'approved' ? '#166534' : '#854D0E' }]}>

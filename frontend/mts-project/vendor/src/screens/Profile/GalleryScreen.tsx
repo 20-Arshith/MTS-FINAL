@@ -53,7 +53,11 @@ export default function GalleryScreen() {
         }
     }, []);
 
-    useFocusEffect(fetchGallery);
+    useFocusEffect(
+        useCallback(() => {
+            fetchGallery();
+        }, [fetchGallery])
+    );
 
     const pickAndUpload = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
