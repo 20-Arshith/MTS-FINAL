@@ -376,7 +376,7 @@ export default function BusinessProfileScreen() {
                                 email: emailAddress || undefined,
                                 full_name: ownerName,
                                 business_name: businessName,
-                                agent_code: normalizedAgentCode || 'AGT-ZCVA-R5P6', // Fallback to bypass old backend requirement
+                                ...(normalizedAgentCode ? { agent_code: normalizedAgentCode } : {}),
                                 whatsapp_number: whatsappNumber || mobileNumber || undefined,
                                 description,
                                 address: resolvedAddress,
