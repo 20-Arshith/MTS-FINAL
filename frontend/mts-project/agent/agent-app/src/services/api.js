@@ -35,9 +35,11 @@ apiClient.interceptors.response.use(
 export const authService = {
     sendOtp: (contact) => apiClient.post('/auth/send-otp', { contact, actorType: 'agent' }),
     verifyOtp: (contact, otp) => apiClient.post('/auth/verify-otp', { contact, otp, actorType: 'agent' }),
-    // For agent registration - no actorType so backend doesn't block unregistered agents
-    sendRegistrationOtp: (contact) => apiClient.post('/auth/send-otp', { contact }),
-    verifyRegistrationOtp: (contact, otp) => apiClient.post('/auth/verify-otp', { contact, otp }),
+    // For agent registration - use 'agent_registration' actorType so backend skips agent/vendor
+    // access checks and only verifies the OTP. This prevents the 'Agent referral required' error
+    // that occurs when retrying registration with a pending (no referral_code) agent account.
+    sendRegistrationOtp: (contact) => apiClient.post('/auth/send-otp', { contact, actorType: 'agent_registration' }),
+    verifyRegistrationOtp: (contact, otp) => apiClient.post('/auth/verify-otp', { contact, otp, actorType: 'agent_registration' }),
     sendVendorRegistrationOtp: (contact) =>
         apiClient.post('/auth/send-otp', { contact, actorType: 'vendor_registration' }),
     verifyVendorRegistrationOtp: (contact, otp) =>

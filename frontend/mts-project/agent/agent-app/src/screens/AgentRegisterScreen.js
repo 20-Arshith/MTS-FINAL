@@ -98,21 +98,30 @@ const AgentRegisterScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            // First verify OTP
+            // Step 1: verify OTP (uses 'agent_registration' actorType — no access checks)
             await authService.verifyRegistrationOtp(mobile.trim(), otp);
 
-            // Then register the agent
+            // Step 2: register agent
             const response = await authService.registerAgent({
                 full_name: fullName.trim(),
                 mobile: mobile.trim(),
                 email: email.trim() || undefined,
             });
 
-            if (response.data.success) {
-                await AsyncStorage.setItem('userToken', response.data.token);
-                await AsyncStorage.setItem('userData', JSON.stringify(response.data.agent));
-                setStep('complete');
+            // Backend returns HTTP 201 with { success: true, token, user, agent }
+            // Show the success screen on any 2xx response (axios won't reach here for errors)
+            const agentData = response.data?.agent || response.data?.user || null;
+            const token = response.data?.token;
+
+            if (token) {
+                await AsyncStorage.setItem('userToken', token);
             }
+            if (agentData) {
+                await AsyncStorage.setItem('userData', JSON.stringify(agentData));
+            }
+
+            // Always transition to the pending-approval screen on success
+            setStep('complete');
         } catch (error) {
             const message = getErrorMessage(error, 'Registration failed. Please try again.');
             setErrorMessage(message);

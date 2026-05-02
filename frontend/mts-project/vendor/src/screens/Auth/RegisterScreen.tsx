@@ -68,8 +68,21 @@ export default function RegisterScreen() {
         }
 
         try {
+            // Validate agent code only if one was entered — it is OPTIONAL.
+            // If the code is invalid, warn the vendor and clear it, but do NOT block the flow.
             if (normalizedAgentCode) {
-                await authService.validateAgentCode(normalizedAgentCode);
+                try {
+                    await authService.validateAgentCode(normalizedAgentCode);
+                } catch (agentError: any) {
+                    const agentMsg = agentError?.response?.data?.message || 'Invalid agent code';
+                    setAgentCode('');
+                    Alert.alert(
+                        'Invalid Agent Code',
+                        `${agentMsg}\n\nYou can continue without an agent code — your account will be reviewed by an admin.`,
+                        [{ text: 'Continue Without Code' }]
+                    );
+                    // Do NOT return — proceed with OTP send without the invalid code
+                }
             }
             await authService.sendOtp(val, { actorType: 'vendor_registration' });
             setShowOtp(true);
